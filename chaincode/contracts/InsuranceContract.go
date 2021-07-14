@@ -12,9 +12,9 @@ type InsuranceContract struct {
 
 // Account : User account
 type Account struct {
-	AccountID         string `json:"accountID"`
-	Name              string `json:"name"`
-	Address         bool   `json:"address"`
+	AccountID string `json:"accountID"`
+	Name      string `json:"name"`
+	Address   bool   `json:"address"`
 }
 
 // Policy : Hold policy data
@@ -22,3 +22,4 @@ type Policy struct {
 	PolicyID string `json:"policyID"`
 }
 
+//Placeholder for Functions
