@@ -11,16 +11,42 @@ type InsuranceContract struct {
 }
 
 // Account : User account
-type Account struct {
-	AccountID string `json:"accountID"`
-	Name      string `json:"name"`
-	Address   bool   `json:"address"`
+type User struct {
+	UserID string `json:"userID"`
+	UserName      	string `json:"username"`
+	UserAddress   	bool   `json:"useraddress"`
+	ProviderID 		string `json:"providerID"`
+}
+
+// Provider: Account
+type Provider struct {
+	ProviderID 		string `json:"providerID"`
+	ProviderName 	string `json:"providername"`
+
 }
 
 // Policy : Hold policy data
-type Policy struct {
-	PolicyID string `json:"policyID"`
+type Policy struct { 
+	PolicyID 		string `json:"policyID"`
+	ProviderID 		string `json:"providerID"`
+	PolicyName 		string `json:"policyname"`
+	PolicyPlan		[]		Plans
+
 }
 
-//Placeholder for Functions
-// testing pull 
+type Plans struct{
+	PlanName		string `json:"planname"`
+	Deductible		int    `json:"deductible"`
+	OOPLimitPerson	int    `json:"ooplimitperson"`
+	OOPLimitfamily	int    `json:"ooplimitfamily"`
+}
+
+// Init and Creator Functions for User, Organization, Policy and Plan
+func (spc *InsuranceContract) InitInsurance(ctx contractapi.TransactionContextInterface) error {
+
+	// possible function to pre create policy and then create plans. then add the plans to the policy array. 
+	
+
+	return nil;
+}
+
