@@ -22,7 +22,6 @@ type Account struct {
 	DocType           string `json:"docType"`
 	AccountID         string `json:"accountID"`
 	OwnerName         string `json:"name"`
-	ProviderName      string `json:"provider"`
 	LatestTransaction string `json:"transaction"`
 }
 
@@ -32,29 +31,21 @@ type User struct {
 	UserName    string `json:"username"`
 	UserAddress string `json:"useraddress"`
 	OwnerRel    string `json:"rel"` //SELF, SPOUSE, DEPENDANT
-	ProviderID  string `json:"providerID"`
-}
-
-// Provider: Account
-type Provider struct {
-	ProviderID      string `json:"providerID"`
-	ProviderName    string `json:"providername"`
-	ProviderAddress string `json:"providerAddr"` //store the state in which the provider is operating
 }
 
 // Policy : Hold policy data
-type Policy struct {
-	PolicyID   string `json:"policyID"`
-	ProviderID string `json:"providerID"`
-	PolicyName string `json:"policyname"`
-	PolicyPlan []Plans
+type Plans struct {
+	PlanID   		string `json:"policyID"`
+	PlanName 		string `json:"policyname"`
+	PlanOptions []  Policy
 }
 
-type Plans struct {
-	PlanName       string `json:"planname"`
-	Deductible     int    `json:"deductible"`
-	OOPLimitPerson int    `json:"ooplimitperson"`
-	OOPLimitfamily int    `json:"ooplimitfamily"`
+type Policy struct {
+	PolicyID		string `json:"planID"`
+	PolicyName     	string `json:"planname"`
+	Deductible     	int    `json:"deductible"`
+	OOPLimitPerson 	int    `json:"ooplimitperson"`
+	OOPLimitfamily 	int    `json:"ooplimitfamily"`
 }
 
 // Init and Creator Functions for User, Organization, Policy and Plan
@@ -170,36 +161,6 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	return &user, nil
 }
 
-func (spc *InsuranceContract) RegisterProvider(ctx contractapi.TransactionContextInterface, name string) (*Provider, error) {
-	// checks to see if user already exists
-
-	id, _ := ctx.GetClientIdentity().GetID()
-	providerBytes, err := ctx.GetStub().GetState(id)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
-	}
-
-	if providerBytes != nil {
-		return nil, fmt.Errorf("the account already exists for user %s", name)
-	}
-
-	provider := Provider{
-		ProviderID:   id,
-		ProviderName: name,
-	}
-
-	providerBytes, err = json.Marshal(provider)
-	if err != nil {
-		return nil, err
-	}
-	err = ctx.GetStub().PutState(id, providerBytes)
-	if err != nil {
-		return nil, err
-
-	}
-	return &provider, nil
-}
 
 //Getter Functions
 func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
