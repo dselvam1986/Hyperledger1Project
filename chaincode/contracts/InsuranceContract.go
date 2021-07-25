@@ -60,9 +60,7 @@ type Plans struct {
 // Init and Creator Functions for User, Organization, Policy and Plan
 func (spc *InsuranceContract) InitInsurance(ctx contractapi.TransactionContextInterface) error {
 
-	// possible function to pre create policy and then create plans. then add the plans to the policy array. 
-	fmt.Println("Function Init Triggered")
-
+	// possible function to pre create policy and then create plans. then add the plans to the policy array.
 	return nil
 }
 
@@ -100,13 +98,13 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 	// 	ProviderName:      provider,
 	// 	LatestTransaction: ctx.GetStub().GetTxID(),
 	// }
-		
+
 	//convert Golang to jSon format (JSON Byte Array)
 	accountBytes, err = json.Marshal(account)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	//put account data unto the Ledger (key value pair)
 	err = ctx.GetStub().PutState(id, accountBytes)
 	if err != nil {
@@ -117,7 +115,7 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 	}
 
 	/* I DISABLED THIS CODE BLOCK BECAUSE THERE IS NO TRANSACTION STRUCT ABOVE! ALSO WHAT IS THE POINT OF THIS? TO RECORD ALL TRANSACTIONS?
-	 IF THIS WAS FOR MONEY TRANSACTION IT WOULD BE USEFULL, BUT FOR USER CREATION I DONT THINK THATS THIS IS NEEDED. LETS DISCUSS TOMROROW.*/
+	IF THIS WAS FOR MONEY TRANSACTION IT WOULD BE USEFULL, BUT FOR USER CREATION I DONT THINK THATS THIS IS NEEDED. LETS DISCUSS TOMROROW.*/
 	// transaction := Transaction{
 	// 	DocType:       "Transaction",
 	// 	TransactionID: ctx.GetStub().GetTxID(),
@@ -140,24 +138,24 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 	return &account, nil
 }
 
-func (spc *InsuranceContract) RegisterUser (ctx contractapi.TransactionContextInterface, name string, address string, relation string) (*User, error) {
+func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInterface, name string, address string, relation string) (*User, error) {
 	// checks to see if user already exists
-	id,_ := ctx.GetClientIdentity().GetID()
+	id, _ := ctx.GetClientIdentity().GetID()
 	userBytes, err := ctx.GetStub().GetState(id)
 
-	if(err != nil) {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
 	}
 
-	if(userBytes != nil) {
+	if userBytes != nil {
 		return nil, fmt.Errorf("the account already exists for user %s", name)
 	}
 
 	user := User{
-		UserID: 			id,
-		UserName:			name,
-		UserAddress:		address,
-		OwnerRel:			relation,
+		UserID:      id,
+		UserName:    name,
+		UserAddress: address,
+		OwnerRel:    relation,
 	}
 
 	userBytes, err = json.Marshal(user)
@@ -167,28 +165,28 @@ func (spc *InsuranceContract) RegisterUser (ctx contractapi.TransactionContextIn
 	err = ctx.GetStub().PutState(id, userBytes)
 	if err != nil {
 		return nil, err
-	
+
 	}
 	return &user, nil
 }
 
-func (spc *InsuranceContract) RegisterProvider (ctx contractapi.TransactionContextInterface, name string ) (*Provider, error) {
+func (spc *InsuranceContract) RegisterProvider(ctx contractapi.TransactionContextInterface, name string) (*Provider, error) {
 	// checks to see if user already exists
 
-	id,_ := ctx.GetClientIdentity().GetID()
+	id, _ := ctx.GetClientIdentity().GetID()
 	providerBytes, err := ctx.GetStub().GetState(id)
 
-	if(err != nil) {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
 	}
 
-	if(providerBytes != nil) {
+	if providerBytes != nil {
 		return nil, fmt.Errorf("the account already exists for user %s", name)
 	}
 
-	provider := Provider {
-		ProviderID: 			id,
-		ProviderName:			name,
+	provider := Provider{
+		ProviderID:   id,
+		ProviderName: name,
 	}
 
 	providerBytes, err = json.Marshal(provider)
@@ -198,24 +196,53 @@ func (spc *InsuranceContract) RegisterProvider (ctx contractapi.TransactionConte
 	err = ctx.GetStub().PutState(id, providerBytes)
 	if err != nil {
 		return nil, err
-	
+
 	}
 	return &provider, nil
 }
 
 //Getter Functions
-func (spc *InsuranceContract) GetUser (ctx contractapi.TransactionContextInterface, id string) (*User, error) {
+func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
 	userbytes, err := ctx.GetStub().GetState(id)
-	if(err != nil) {
+	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
 	}
-	if(userbytes == nil) {
+	if userbytes == nil {
 		return nil, fmt.Errorf("user not found")
 	}
-	
-	User := User{}	
+
+	User := User{}
 	json.Unmarshal(userbytes, &User)
 
 	return &User, err
 }
 
+// FetchID : to check the owner's AccountID
+func (spc *InsuranceContract) FetchID(ctx contractapi.TransactionContextInterface) (string, error) {
+
+	id, _ := ctx.GetClientIdentity().GetID()
+	accountBytes, err := ctx.GetStub().GetState(id)
+	//check if there is any error returning the worldstate of user certificate ID
+	if err != nil {
+		return "", fmt.Errorf("failed to read from world state: %v", err)
+	}
+
+	var account Account
+	err = json.Unmarshal(accountBytes, &account)
+	if err != nil {
+		return "", err
+	}
+
+	return account.AccountID, nil
+}
+
+// DeleteUserAccount deletes an given asset from the world state.
+func (spc *InsuranceContract) DeleteUserAccount(ctx contractapi.TransactionContextInterface, id string) error {
+
+	_, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return fmt.Errorf("failed to read from world state: %v", err)
+	}
+
+	return ctx.GetStub().DelState(id)
+}

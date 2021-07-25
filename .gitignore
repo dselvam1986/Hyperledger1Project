@@ -1,3 +1,5 @@
 
 
 bin/
+
+chaincode/contracts/otherFunctions.go
