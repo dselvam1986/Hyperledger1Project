@@ -1,17 +1,16 @@
 # Hyperledger1Project
 
-#millan.harris@gmail.com 
+#millan.harris@gmail.com
 
-#dayalmukati@gmail.com 
-#+91-7354545458 
+#dayalmukati@gmail.com
+#+91-7354545458
 
-
-#Insurance 
+#Insurance
 #Public-
-#Contact, Name, Address, Provider 
+#Contact, Name, Address, Provider
 
-#Private- 
-#policy num, payment, deductible 
+#Private-
+#policy num, payment, deductible
 
 #Functions:
 #RegisterOrg
@@ -22,10 +21,9 @@
 
 #checkCoverage
 
-
-#figure out the data. 
+#figure out the data.
 #policy Name
-#policy Id, 
+#policy Id,
 #policy covrage
 #{
-#accidental, 
+#accidental,

@@ -1,0 +1,58 @@
+
+Account
+	- Users
+	- Users
+	
+	- PLan
+		- Policy from provider 1
+		- Policy from provider 2 
+
+Account Register - DONE
+	- User Registration  ( ctx, name, "SELF" ) 
+	- Owner rel is SELF
+	- Append User{} to Account User Array
+
+User Register - DONE
+	- Self is only called via Account and user is linked and added to array
+	If not SELF
+	- we need account ID, and relation
+	with Account ID we can pull up the account info, Unmarshall then add the user
+	to the array
+	
+	
+Plans 
+    - Create function to add new plans - Done
+    - Function to Get all Avaiable PLans from all Organization - Dinesh
+
+Policy 
+    - Function to add new policy - Milan
+    
+    - Function to Select Policy and link it to Plan and Account  - DInesh
+
+Linking Plans to Account
+    - a function to link a plan to a account ( Simulates the process of User selecting a Plan for self or family) - MIlan
+
+User 
+    - Subscribe to a Plan - Dinesh/ Milan
+
+
+Plan A (Sign up reward, $1000 to FSA)
+    - Dental
+    - Vision 
+    - Medical
+    - FSA 
+    - Family/Single
+
+Plan B
+    - Dental
+    - Vision 
+    - Medical
+    - No FSA
+    - No Family/ Only Single
+
+Plan C
+    - Dental
+    - Vision 
+    - Medical
+    - No FSA
+    - Family/Single
