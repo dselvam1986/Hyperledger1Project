@@ -23,29 +23,29 @@ type Account struct {
 	AccountID         string `json:"accountID"`
 	OwnerName         string `json:"name"`
 	LatestTransaction string `json:"transaction"`
+	Users             []User
 }
 
 // Account : User account
 type User struct {
-	UserID      string `json:"userID"` //is this memberID? How does it defer from UserName?
-	UserName    string `json:"username"`
-	UserAddress string `json:"useraddress"`
-	OwnerRel    string `json:"rel"` //SELF, SPOUSE, DEPENDANT
+	UserID   string `json:"userID"` //is this memberID? How does it defer from UserName?
+	UserName string `json:"username"`
+	OwnerRel string `json:"rel"` //SELF, SPOUSE, DEPENDANT
 }
 
 // Policy : Hold policy data
 type Plans struct {
-	PlanID   		string `json:"policyID"`
-	PlanName 		string `json:"policyname"`
-	PlanOptions []  Policy
+	PlanID      string `json:"policyID"`
+	PlanName    string `json:"policyname"`
+	PlanOptions []Policy
 }
 
 type Policy struct {
-	PolicyID		string `json:"planID"`
-	PolicyName     	string `json:"planname"`
-	Deductible     	int    `json:"deductible"`
-	OOPLimitPerson 	int    `json:"ooplimitperson"`
-	OOPLimitfamily 	int    `json:"ooplimitfamily"`
+	PolicyID       string `json:"planID"`
+	PolicyName     string `json:"planname"`
+	Deductible     int    `json:"deductible"`
+	OOPLimitPerson int    `json:"ooplimitperson"`
+	OOPLimitfamily int    `json:"ooplimitfamily"`
 }
 
 // Init and Creator Functions for User, Organization, Policy and Plan
@@ -56,16 +56,16 @@ func (spc *InsuranceContract) InitInsurance(ctx contractapi.TransactionContextIn
 }
 
 // RegisterUserAccount : User registers his account
-func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionContextInterface, name string, provider string) (*Account, error) {
+func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionContextInterface, name string, provider string) (*Account, *User, error) {
 	id, _ := ctx.GetClientIdentity().GetID()
 	//check if there is any error returning the worldstate of user certificate ID
 	accountBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
+		return nil, nil, fmt.Errorf("failed to read from world state: %v", err)
 	}
 	//check if ID already exists (return the state of the ID by checking the world state)
 	if accountBytes != nil {
-		return nil, fmt.Errorf("the account already exists for user %s", name)
+		return nil, nil, fmt.Errorf("the account already exists for user %s", name)
 	}
 	//defince structs
 	account := Account{
@@ -75,34 +75,29 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 		LatestTransaction: ctx.GetStub().GetTxID(),
 	}
 
-	/* I DISABLED THIS CODE BLOCK BECAUSE IT WAS CAUSING A LOT OF ERRORS ON MY SIDE AND ALSO YOU WERE REPEATING THIS TWICE. I DIDNT DELETE THIS YET BUT WE CAN DISCUSS THIS.*/
-	//convert Golang to jSon format (JSON Byte Array)
-	// accountBytes, err = json.Marshal(account)
-	// if err != nil {
-	// 	return nil, err//defince structs
-	// }
-	// account := Account{
-	// 	DocType:           "Account",
-	// 	AccountID:         id,
-	// 	OwnerName:         name,
-	// 	ProviderName:      provider,
-	// 	LatestTransaction: ctx.GetStub().GetTxID(),
-	// }
-
 	//convert Golang to jSon format (JSON Byte Array)
 	accountBytes, err = json.Marshal(account)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	//put account data unto the Ledger (key value pair)
 	err = ctx.GetStub().PutState(id, accountBytes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	//declare user variable to save registered user
+	var user User
+	/*
+		user := User{
+
+		}*/
+	//register the owner as a user
+	//user = RegisterUser(ctx, name, "SELF")
 
 	/* I DISABLED THIS CODE BLOCK BECAUSE THERE IS NO TRANSACTION STRUCT ABOVE! ALSO WHAT IS THE POINT OF THIS? TO RECORD ALL TRANSACTIONS?
 	IF THIS WAS FOR MONEY TRANSACTION IT WOULD BE USEFULL, BUT FOR USER CREATION I DONT THINK THATS THIS IS NEEDED. LETS DISCUSS TOMROROW.*/
@@ -118,17 +113,19 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 	// transactionBytes, err = json.Marshal(transaction)
 	// if err != nil {
 	// 	return nil, err
-	// }
+	// }entIdentity().GetID()
+	//userBytes, err := ctx.GetStub().GetState(id)
+
 	// //write info to the ledger
 	// err = ctx.GetStub().PutState(ctx.GetStub().GetTxID(), transactionBytes)
 	// if err != nil {
 	// 	return nil, err
 	// }
 
-	return &account, nil
+	return &account, &user, nil
 }
 
-func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInterface, name string, address string, relation string) (*User, error) {
+func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInterface, name string, relation string) (*User, error) {
 	// checks to see if user already exists
 	id, _ := ctx.GetClientIdentity().GetID()
 	userBytes, err := ctx.GetStub().GetState(id)
@@ -142,10 +139,9 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	}
 
 	user := User{
-		UserID:      id,
-		UserName:    name,
-		UserAddress: address,
-		OwnerRel:    relation,
+		UserID:   id,
+		UserName: name,
+		OwnerRel: relation,
 	}
 
 	userBytes, err = json.Marshal(user)
@@ -159,7 +155,6 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	}
 	return &user, nil
 }
-
 
 //Getter Functions
 func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
