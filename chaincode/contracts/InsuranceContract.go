@@ -72,7 +72,6 @@ func (spc *InsuranceContract) RegisterUserAccount(ctx contractapi.TransactionCon
 		DocType:           "Account",
 		AccountID:         id,
 		OwnerName:         name,
-		ProviderName:      provider,
 		LatestTransaction: ctx.GetStub().GetTxID(),
 	}
 
