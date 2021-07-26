@@ -38,7 +38,7 @@ type User struct {
 type Plans struct {
 	PlanID      string `json:"policyID"` 
 	PlanName    string `json:"policyname"`
-	PlanOptions []Policy
+	PlanOptions []string
 }
 
 type Policy struct {
@@ -277,33 +277,77 @@ func (spc *InsuranceContract) DeleteAccount(ctx contractapi.TransactionContextIn
 	return ctx.GetStub().DelState(id)
 }
 
+// PolicyPlan : Link a policy to an exisiting plan
+func (spc *InsuranceContract) PolicyPlan(ctx contractapi.TransactionContextInterface, policyID string, planID string) (*Plans, error) {
+
+	var plan Plans
+	accountBytes, err := ctx.GetStub().GetState(planID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	//check if ID already exists (return the state of the ID by checking the world state)
+	if accountBytes != nil {
+		fmt.Errorf("Confirmed the plan already exists for planID %s", planID)
+
+		plan.PlanOptions = append(plan.PlanOptions, policyID)
+
+	}
+	//convert Golang to jSon format (JSON Byte Array)
+	accountBytes, err = json.Marshal(plan)
+	fmt.Print(accountBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return &plan, nil
+}
+
+// RegisterPolicy : User subscribes to a policy
+func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, ptype string, deduct int64, isFSA bool, single bool, family bool) (*Policy, error) {
+
+	id, _ := ctx.GetClientIdentity().GetID()
+	//check if there is any error returning the worldstate of user certificate ID
+	policyBytes, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	//check if ID already exists (return the state of the ID by checking the world state)
+	if policyBytes != nil {
+		return nil, fmt.Errorf("the policy already exists for policyID %s", id)
+	}
+
+	if (single){
+		OOP=2600
+	}	else
+	{
+		OOP=5000
+	}
+
+	if(isFSA){
+		bal=1000
+	}
+	
+	//define structs
+	policy := Policy{		
+		PolicyID        id,
+	    PolicyName      ptype,
+	    Deductible      deduct,
+		OOPLimitPerson  OOP,
+		OOPLimitfamily  OOP,
+		FSA             isFSA,
+		SABalance       bal,
+	}
+	//convert Golang to jSon format (JSON Byte Array)
+	policyBytes, err = json.Marshal(policy)
+	if err,err != nil {
+		return nil, err
+	}
+	//put policy data unto the Ledger (key value pair)
+	err = ctx.GetStub().PutState(id, policyBytes)
+	if err != nil {
+		return nil, err
+	}
+	return &account, nil
+}
 
 
-
-
-
-
-
-/* I DISABLED THIS CODE BLOCK BECAUSE THERE IS NO TRANSACTION STRUCT ABOVE! ALSO WHAT IS THE POINT OF THIS? TO RECORD ALL TRANSACTIONS?
-IF THIS WAS FOR MONEY TRANSACTION IT WOULD BE USEFULL, BUT FOR USER CREATION I DONT THINK THATS THIS IS NEEDED. LETS DISCUSS TOMROROW.*/
-
-// transaction := Transaction{
-// 	DocType:       "Transaction",
-// 	TransactionID: ctx.GetStub().GetTxID(),
-// 	Beneficiary:   id,
-// 	Remitter:      provider,
-// 	Amount:        0,
-// }
-
-// var transactionBytes []byte
-// transactionBytes, err = json.Marshal(transaction)
-// if err != nil {
-// 	return nil, err
-// }entIdentity().GetID()
-//userBytes, err := ctx.GetStub().GetState(id)
-
-// //write info to the ledger
-// err = ctx.GetStub().PutState(ctx.GetStub().GetTxID(), transactionBytes)
-// if err != nil {
-// 	return nil, err
-// }
