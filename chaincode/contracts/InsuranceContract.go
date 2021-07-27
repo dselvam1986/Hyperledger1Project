@@ -29,26 +29,28 @@ type Account struct {
 
 // Account : User account
 type User struct {
-	UserID   string `json:"userID"` //is this memberID? How does it defer from UserName?
-	UserName string `json:"username"`
-	OwnerRel string `json:"rel"` //SELF, SPOUSE, DEPENDANT
+	UserID   	string 	`json:"userID"` //is this memberID? How does it defer from UserName?
+	UserName 	string 	`json:"username"`
+	OwnerRel 	string 	`json:"rel"` //SELF, SPOUSE, DEPENDANT
 }
 
 // Policy : Hold policy data
 type Plans struct {
-	PlanID      string `json:"policyID"` 
-	PlanName    string `json:"policyname"`
-	PlanOptions []Policy
+	PlanID      string 	`json:"policyID"` 
+	PlanName    string 	`json:"policyname"`
+	FamilyPlan	bool	`json:"familyplan"`
+	PlanOptions []string `json:"planoptions"`
 }
 
 type Policy struct {
-	PolicyID       string `json:"planID"`
-	PolicyName     string `json:"planname"` /* Medical, Vision, Dental */
-	Deductible     int    `json:"deductible"`
-	OOPLimitPerson int    `json:"ooplimitperson"`
-	OOPLimitfamily int    `json:"ooplimitfamily"`
-	FSA			   bool   `json:"fsa"`	
-	FSABalance     int    `json:"fsabalance"` 
+	PolicyID       	string 	`json:"planID"`
+	PolicyName     	string 	`json:"planname"` /* Medical, Vision, Dental */
+	Deductible     	int    	`json:"deductible"`
+	IsFamily		bool	`json:"isfamily"`
+	OOPLimitSingle 	int    	`json:"ooplimitsingle"`
+	OOPLimitFamily 	int    	`json:"ooplimitfamily"`
+	FSA			   	bool   	`json:"fsa"`	
+	FSABalance     	int    	`json:"fsabalance"` 
 }
 
 // Init and Creator Functions for User, Organization, Policy and Plan
@@ -105,6 +107,7 @@ func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContext
 	return &account, user, nil
 }
 
+// Create a new User ( ORG pov )
 func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInterface, name string, relation string, isSelf bool, accountID string) (*User, error) {
 	
 	// checks to see if user already exists
@@ -164,7 +167,8 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	return &user, nil
 }
 
-func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInterface, name string ) (*Plans, error) {
+// Create a new Plan ( ORG pov )
+func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInterface, name string, isFamilyPlan bool ) (*Plans, error) {
 	
 	// checks to see if user already exists
 	id, _ := ctx.GetClientIdentity().GetID()
@@ -181,6 +185,7 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 	plan := Plans{
 		PlanID: id, 
 		PlanName: name,
+		FamilyPlan: isFamilyPlan,
 	}
 
 	planBytes, err = json.Marshal(plan)
@@ -196,7 +201,8 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 	return &plan, nil
 }
 
-func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, name string, deductible int) (*Policy, error) {
+// Create a new Policy ( ORG pov )
+func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, name string, deductible int, isFamilyPolicy bool, OOPlimit int) (*Policy, error) {
 	
 	// checks to see if user already exists
 	id, _ := ctx.GetClientIdentity().GetID()
@@ -210,12 +216,23 @@ func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextI
 		return nil, fmt.Errorf("the account already exists for user %s", name)
 	}
 
+	var OOPFamily int
+	var OOPSingle int
+	if (isFamilyPolicy){
+		OOPFamily = OOPlimit
+		OOPSingle = 0
+	}else{
+		OOPFamily = 0
+		OOPSingle = OOPlimit
+	}
+
 	policy := Policy{
 		PolicyID: id,
 		PolicyName: name, 
 		Deductible: deductible,
-		// OOPLimitPerson: personLimit,
-		// OOPLimitfamily: familylimit,
+		IsFamily: isFamilyPolicy,
+		OOPLimitSingle: OOPSingle,
+		OOPLimitFamily: OOPFamily,
 	}
 
 	policyBytes, err = json.Marshal(policy)
@@ -233,6 +250,7 @@ func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextI
 
 
 //Getter Functions
+// Get User from ID
 func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
 	userbytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
@@ -281,7 +299,7 @@ func (spc *InsuranceContract) DeleteAccount(ctx contractapi.TransactionContextIn
 
 //Link Functionality
 // PolicyPlan : Link a policy to an exisiting plan
-func (spc *InsuranceContract) PolicyPlan(ctx contractapi.TransactionContextInterface, policyID string, planID string) (string, error) {
+func (spc *InsuranceContract) LinkPolicyToPlan(ctx contractapi.TransactionContextInterface, policyID string, planID string) (string, error) {
 	// get plan info
 	var plan Plans
 	planBytes, err := ctx.GetStub().GetState(planID)
@@ -297,81 +315,53 @@ func (spc *InsuranceContract) PolicyPlan(ctx contractapi.TransactionContextInter
 	if err != nil {
 		return "", err
 	}
-	// get policy info
-	var policy Policy
-	policybytes, err := ctx.GetStub().GetState(policyID)
-	if err != nil {
-		return "", fmt.Errorf("failed to read from world state: %v", err)
-	}
-	//check if ID already exists (return the state of the ID by checking the world state)
-	if policybytes != nil {
-		return "", fmt.Errorf("confirmed the plan already exists for planID %s", planID)
-	}
+	// // get policy info
+	// var policy Policy
+	// policybytes, err := ctx.GetStub().GetState(policyID)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to read from world state: %v", err)
+	// }
+	// //check if ID already exists (return the state of the ID by checking the world state)
+	// if policybytes != nil {
+	// 	return "", fmt.Errorf("confirmed the plan already exists for planID %s", planID)
+	// }
 
-	json.Unmarshal(policybytes, &policy)
+	// json.Unmarshal(policybytes, &policy)
 
-	plan.PlanOptions= append(plan.PlanOptions, policy)   
+	plan.PlanOptions= append(plan.PlanOptions, policyID)   
 	return "Policy addded to Plan",nil
 }
 
 // RegisterPolicy : User subscribes to a policy
-func (spc *InsuranceContract) RegisterPlanToAccount(ctx contractapi.TransactionContextInterface, ptype string, deduct int, isFSA bool, single bool, family bool) (*Policy, error) {
+func (spc *InsuranceContract) LinkPlanToAccount(ctx contractapi.TransactionContextInterface, accountID string, planID string) (string, error) {
 
-	id, _ := ctx.GetClientIdentity().GetID()
 	//check if there is any error returning the worldstate of user certificate ID
-	policyBytes, err := ctx.GetStub().GetState(id)
+	accountBytes, err := ctx.GetStub().GetState(accountID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read from world state: %v", err)
+		return "", fmt.Errorf("failed to read from world state: %v", err)
 	}
 	//check if ID already exists (return the state of the ID by checking the world state)
-	if policyBytes != nil {
-		return nil, fmt.Errorf("the policy already exists for policyID %s", id)
+	if accountBytes == nil {
+		return "", fmt.Errorf("the account is not found: %v", accountID)
 	}
 
 	// unmarshal the policy to update value
-	var policy Policy
-	json.Unmarshal(policyBytes, &policy)
+	var account Account
+	json.Unmarshal(accountBytes, &account)
 
-	var OOP int
-	var bal int
+	account.PlanId = planID
 
-	if (single){
-		OOP = 2600
-	}else {
-		OOP = 5000
-	}
-	if(isFSA){
-		bal =1000
-	}
-
-	// Update values 
-	policy.OOPLimitPerson = OOP
-	policy.OOPLimitfamily = OOP
-	policy.FSA = isFSA
-	policy.FSABalance = bal
-
-
-	// //define structs
-	// policy := Policy{		
-	// 	PolicyID:        id,
-	//     PolicyName:      ptype,
-	//     Deductible:      deduct,
-	// 	OOPLimitPerson:  OOP,
-	// 	OOPLimitfamily:  OOP,
-	// 	FSA:             isFSA,
-	// 	FSABalance:       bal,
-	// }
 	//convert Golang to jSon format (JSON Byte Array)
-	policyBytes, err = json.Marshal(policy)
+	accountBytes, err = json.Marshal(account)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	//put policy data unto the Ledger (key value pair)
-	err = ctx.GetStub().PutState(id, policyBytes)
+	err = ctx.GetStub().PutState(accountID, accountBytes)
 	if err != nil {
-		return nil, err
+		return "nil", err
 	}
-	return &policy, nil
+	return "Account linked to Plan", nil
 }
 
-
+// Get All available plans for User: Should return account is and Array of Plans (full details) - User will choose plan and pass accountId and PlanID to Function LInkPlanToAccount

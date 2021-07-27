@@ -22,7 +22,7 @@ User Register - DONE
 	
 Plans 
     - Create function to add new plans - Done
-    - Function to Get all Avaiable PLans from all Organization - Dinesh
+    - Function to Get all Avaiable PLans from all Organization - Dinesh - TODO
 
 Policy 
     - Function to add new policy - Milan - Done
@@ -30,10 +30,10 @@ Policy
     - Function to Select Policy and link it to Plan   - DInesh - Done
 
 Linking Plans to Account
-    - a function to link a plan to a account ( Simulates the process of User selecting a Plan for self or family) - MIlan
+    - a function to link a plan to a account ( Simulates the process of User selecting a Plan for self or family) - MIlan - Done
 
 User 
-    - Subscribe to a Plan - Dinesh/ Milan
+    - Subscribe to a Plan - Dinesh/ Milan - TODO
 
 
 Plan A (Sign up reward, $1000 to FSA)
