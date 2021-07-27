@@ -196,7 +196,7 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 	return &plan, nil
 }
 
-func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, name string, deductible int, personLimit int, familylimit int ) (*Policy, error) {
+func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, name string, deductible int) (*Policy, error) {
 	
 	// checks to see if user already exists
 	id, _ := ctx.GetClientIdentity().GetID()
@@ -214,8 +214,8 @@ func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextI
 		PolicyID: id,
 		PolicyName: name, 
 		Deductible: deductible,
-		OOPLimitPerson: personLimit,
-		OOPLimitfamily: familylimit,
+		// OOPLimitPerson: personLimit,
+		// OOPLimitfamily: familylimit,
 	}
 
 	policyBytes, err = json.Marshal(policy)
@@ -315,53 +315,63 @@ func (spc *InsuranceContract) PolicyPlan(ctx contractapi.TransactionContextInter
 }
 
 // RegisterPolicy : User subscribes to a policy
-// func (spc *InsuranceContract) RegisterPlanToAccount(ctx contractapi.TransactionContextInterface, ptype string, deduct int, isFSA bool, single bool, family bool) (*Policy, error) {
+func (spc *InsuranceContract) RegisterPlanToAccount(ctx contractapi.TransactionContextInterface, ptype string, deduct int, isFSA bool, single bool, family bool) (*Policy, error) {
 
-// 	id, _ := ctx.GetClientIdentity().GetID()
-// 	//check if there is any error returning the worldstate of user certificate ID
-// 	policyBytes, err := ctx.GetStub().GetState(id)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("failed to read from world state: %v", err)
-// 	}
-// 	//check if ID already exists (return the state of the ID by checking the world state)
-// 	if policyBytes != nil {
-// 		return nil, fmt.Errorf("the policy already exists for policyID %s", id)
-// 	}
+	id, _ := ctx.GetClientIdentity().GetID()
+	//check if there is any error returning the worldstate of user certificate ID
+	policyBytes, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	//check if ID already exists (return the state of the ID by checking the world state)
+	if policyBytes != nil {
+		return nil, fmt.Errorf("the policy already exists for policyID %s", id)
+	}
 
-// 	var OOP int
-// 	var bal int
+	// unmarshal the policy to update value
+	var policy Policy
+	json.Unmarshal(policyBytes, &policy)
 
-// 	if (single){
-// 		OOP :=2600
-// 	}else {
-// 		OOP :=5000
-// 	}
+	var OOP int
+	var bal int
 
-// 	if(isFSA){
-// 		bal :=1000
-// 	}
-	
-// 	//define structs
-// 	policy := Policy{		
-// 		PolicyID:        id,
-// 	    PolicyName:      ptype,
-// 	    Deductible:      deduct,
-// 		OOPLimitPerson:  OOP,
-// 		OOPLimitfamily:  OOP,
-// 		FSA:             isFSA,
-// 		FSABalance:       bal,
-// 	}
-// 	//convert Golang to jSon format (JSON Byte Array)
-// 	policyBytes, err = json.Marshal(policy)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	//put policy data unto the Ledger (key value pair)
-// 	err = ctx.GetStub().PutState(id, policyBytes)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &policy, nil
-// }
+	if (single){
+		OOP = 2600
+	}else {
+		OOP = 5000
+	}
+	if(isFSA){
+		bal =1000
+	}
+
+	// Update values 
+	policy.OOPLimitPerson = OOP
+	policy.OOPLimitfamily = OOP
+	policy.FSA = isFSA
+	policy.FSABalance = bal
+
+
+	// //define structs
+	// policy := Policy{		
+	// 	PolicyID:        id,
+	//     PolicyName:      ptype,
+	//     Deductible:      deduct,
+	// 	OOPLimitPerson:  OOP,
+	// 	OOPLimitfamily:  OOP,
+	// 	FSA:             isFSA,
+	// 	FSABalance:       bal,
+	// }
+	//convert Golang to jSon format (JSON Byte Array)
+	policyBytes, err = json.Marshal(policy)
+	if err != nil {
+		return nil, err
+	}
+	//put policy data unto the Ledger (key value pair)
+	err = ctx.GetStub().PutState(id, policyBytes)
+	if err != nil {
+		return nil, err
+	}
+	return &policy, nil
+}
 
 
