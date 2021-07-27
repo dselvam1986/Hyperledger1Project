@@ -25,9 +25,9 @@ Plans
     - Function to Get all Avaiable PLans from all Organization - Dinesh
 
 Policy 
-    - Function to add new policy - Milan
+    - Function to add new policy - Milan - Done
     
-    - Function to Select Policy and link it to Plan and Account  - DInesh
+    - Function to Select Policy and link it to Plan   - DInesh - Done
 
 Linking Plans to Account
     - a function to link a plan to a account ( Simulates the process of User selecting a Plan for self or family) - MIlan
