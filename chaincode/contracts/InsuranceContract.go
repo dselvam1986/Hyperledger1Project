@@ -5,9 +5,9 @@ import (
 	//"encoding/json"
 	"encoding/json"
 	"fmt"
-
-	//"log"
-	//"time"
+	"log"
+	"strconv"
+	"strings"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -23,28 +23,34 @@ type Account struct {
 	AccountID         string `json:"accountID"`
 	OwnerName         string `json:"name"`
 	LatestTransaction string `json:"transaction"`
-	Users             []User
+	Users             []User `json:"user"`
 	PlanId 			  string `json:"planid"`
 }
 
 // Account : User account
+// DOCTYPE: USER
 type User struct {
+	DocType     string	`json:"docType"`
 	UserID   	string 	`json:"userID"` //is this memberID? How does it defer from UserName?
 	UserName 	string 	`json:"username"`
 	OwnerRel 	string 	`json:"rel"` //SELF, SPOUSE, DEPENDANT
 }
 
 // Policy : Hold policy data
+//DOCTYPE: PLANS
 type Plans struct {
-	PlanID      string 	`json:"policyID"` 
-	PlanName    string 	`json:"policyname"`
+	DocType     string  `json:"docType"`
+	PlanID      string 	`json:"planID"` 
+	PlanName    string 	`json:"planname"`
 	FamilyPlan	bool	`json:"familyplan"`
 	PlanOptions []string `json:"planoptions"`
 }
 
+//DOCTYPEL POLICY
 type Policy struct {
-	PolicyID       	string 	`json:"planID"`
-	PolicyName     	string 	`json:"planname"` /* Medical, Vision, Dental */
+	DocType         string  `json:"docType"`
+	PolicyID       	string 	`json:"policyID"`
+	PolicyName     	string 	`json:"policyname"` /* Medical, Vision, Dental */
 	Deductible     	int    	`json:"deductible"`
 	IsFamily		bool	`json:"isfamily"`
 	OOPLimitSingle 	int    	`json:"ooplimitsingle"`
@@ -53,17 +59,28 @@ type Policy struct {
 	FSABalance     	int    	`json:"fsabalance"` 
 }
 
+var accountCount int
+var userCount int
+var planCount int
+var policyCount int
+
+var contract InsuranceContract
 // Init and Creator Functions for User, Organization, Policy and Plan
 func (spc *InsuranceContract) InitInsurance(ctx contractapi.TransactionContextInterface) error {
 
 	// possible function to pre create policy and then create plans. then add the plans to the policy array.
-	fmt.Println("Init Insurance Triggered")
+	accountCount = 0;
+	userCount = 0;
+	planCount = 0;
+	policyCount = 0;
+
 	return nil
 }
 
 // RegisterUserAccount : User registers his account - WORKS FINE
-func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContextInterface, name string, provider string) (*Account, error) {
-	id, _ := ctx.GetClientIdentity().GetID()
+func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContextInterface, name string) (*Account, error) {
+	
+	id, _ :=  contract.IDGenerator("account", name, accountCount)
 	//check if there is any error returning the worldstate of user certificate ID
 	accountBytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
@@ -76,7 +93,6 @@ func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContext
 
 	//declare user variable to save registered user,  declare contract var to call func within func
 	var user *User
-	var contract InsuranceContract
 	user, _ = contract.RegisterUser(ctx, name, "SELF", true, "")
 	
 	// save user data in account User array
@@ -106,6 +122,8 @@ func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContext
 		return nil, err
 	}
 
+	accountCount += 1
+
 	return &account, nil
 }
 
@@ -113,7 +131,7 @@ func (spc *InsuranceContract) RegisterAccount(ctx contractapi.TransactionContext
 func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInterface, name string, relation string, isSelf bool, accountID string) (*User, error) {
 	
 	// checks to see if user already exists
-	id, _ := ctx.GetClientIdentity().GetID()
+	id, _ := contract.IDGenerator("user", name, userCount)
 	userBytes, err := ctx.GetStub().GetState(id)
 
 	if err != nil {
@@ -123,8 +141,10 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	if userBytes != nil {
 		return nil, fmt.Errorf("the account already exists for user %s", name)
 	}
+	log.Println("creating user")
 
 	user := User{
+		DocType:  "User",
 		UserID:   id,
 		UserName: name,
 		OwnerRel: relation,
@@ -134,21 +154,27 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("marshal user")
+
 	err = ctx.GetStub().PutState(id, userBytes)
 	if err != nil {
 		return nil, err
 
 	}
+	log.Println("Put State user")
 
 	if(!isSelf){
+		log.Println("Getting account from ID - getState")
 		accountBytes, err := ctx.GetStub().GetState(accountID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read from world state: %v", err)
 		}
 		//check if ID already exists (return the state of the ID by checking the world state)
-		if accountBytes != nil {
-			return nil, fmt.Errorf("the account already exists for user %s", name)
+		if accountBytes == nil {
+			return nil, fmt.Errorf("the account not found for user %s", name)
 		}
+
 		var account Account
 		err = json.Unmarshal(accountBytes, &account)
 		if err != nil {
@@ -159,12 +185,18 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 
 		//convert Golang to jSon format (JSON Byte Array)
 		accountBytes, err = json.Marshal(account)
-		fmt.Print(accountBytes)
-
 		if err != nil {
 			return nil, err
 		}
+
+		err = ctx.GetStub().PutState(accountID, accountBytes)
+		if err != nil {
+			return nil, err
+
+		}
 	}
+
+	userCount += 1
 
 	return &user, nil
 }
@@ -173,7 +205,7 @@ func (spc *InsuranceContract) RegisterUser(ctx contractapi.TransactionContextInt
 func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInterface, name string, isFamilyPlan bool ) (*Plans, error) {
 	
 	// checks to see if user already exists
-	id, _ := ctx.GetClientIdentity().GetID()
+	id, _ := contract.IDGenerator("plan", name, planCount)
 	planBytes, err := ctx.GetStub().GetState(id)
 
 	if err != nil {
@@ -183,11 +215,13 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 	if planBytes != nil {
 		return nil, fmt.Errorf("the account already exists for user %s", name)
 	}
-
+	// var planArray []string
 	plan := Plans{
-		PlanID: id, 
-		PlanName: name,
+		DocType:	"Plan",
+		PlanID:		id, 
+		PlanName:	name,
 		FamilyPlan: isFamilyPlan,
+		PlanOptions: []string{},
 	}
 
 	planBytes, err = json.Marshal(plan)
@@ -200,6 +234,8 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 
 	}
 
+	planCount += 1
+
 	return &plan, nil
 }
 
@@ -207,7 +243,7 @@ func (spc *InsuranceContract) RegisterPlan(ctx contractapi.TransactionContextInt
 func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextInterface, name string, deductible int, isFamilyPolicy bool, OOPlimit int) (*Policy, error) {
 	
 	// checks to see if user already exists
-	id, _ := ctx.GetClientIdentity().GetID()
+	id, _ := contract.IDGenerator("policy", name, policyCount)
 	policyBytes, err := ctx.GetStub().GetState(id)
 
 	if err != nil {
@@ -229,6 +265,7 @@ func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextI
 	}
 
 	policy := Policy{
+		DocType: "Policy",
 		PolicyID: id,
 		PolicyName: name, 
 		Deductible: deductible,
@@ -246,13 +283,14 @@ func (spc *InsuranceContract) RegisterPolicy(ctx contractapi.TransactionContextI
 		return nil, err
 
 	}
+	policyCount += 1
 
 	return &policy, nil
 }
 
 
 //Getter Functions
-// Get User from ID
+// Get User from ID - WORKS FINE
 func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterface, id string) (*User, error) {
 	userbytes, err := ctx.GetStub().GetState(id)
 	if err != nil {
@@ -263,16 +301,18 @@ func (spc *InsuranceContract) GetUser(ctx contractapi.TransactionContextInterfac
 	}
 
 	var user User
-	json.Unmarshal(userbytes, &user)
-
+	err = json.Unmarshal(userbytes, &user)
+	if err != nil {
+		return nil, err
+	}
+	
 	return &user, err
 }
 
 // FetchID : to check the owner's AccountID - WORKS FINE
-func (spc *InsuranceContract) FetchID(ctx contractapi.TransactionContextInterface) (*Account, error) {
+func (spc *InsuranceContract) FetchID(ctx contractapi.TransactionContextInterface, accountID string) (*Account, error) {
 
-	id, _ := ctx.GetClientIdentity().GetID()
-	accountBytes, err := ctx.GetStub().GetState(id)
+	accountBytes, err := ctx.GetStub().GetState(accountID)
 	//check if there is any error returning the worldstate of user certificate ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to read from world state: %v", err)
@@ -309,13 +349,13 @@ func (spc *InsuranceContract) LinkPolicyToPlan(ctx contractapi.TransactionContex
 		return "", fmt.Errorf("failed to read from world state: %v", err)
 	}
 	//check if ID already exists (return the state of the ID by checking the world state)
-	if planBytes != nil {
-		return "", fmt.Errorf("confirmed the plan already exists for planID %s", planID)
+	if planBytes == nil {
+		return "", fmt.Errorf("plan does not exists for planID %s", planID)
 	}
 
 	err = json.Unmarshal(planBytes, &plan)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("unmarshall planbytes error: %v", err)
 	}
 	// // get policy info
 	// var policy Policy
@@ -330,9 +370,54 @@ func (spc *InsuranceContract) LinkPolicyToPlan(ctx contractapi.TransactionContex
 
 	// json.Unmarshal(policybytes, &policy)
 
-	plan.PlanOptions= append(plan.PlanOptions, policyID)   
+	plan.PlanOptions= append(plan.PlanOptions, policyID) 
+	planBytes, err = json.Marshal(plan)
+	if err != nil {
+		return "", err
+	}
+	
+	err = ctx.GetStub().PutState(planID, planBytes)
+	if err != nil {
+		return "", err
+
+	}
+
 	return "Policy addded to Plan",nil
 }
+
+//Show all available plan to User by Account ID
+func (spc *InsuranceContract) ShowAvailablePlans (ctx contractapi.TransactionContextInterface) ([]*Plans, error) {
+
+	queryString := `{"selector":{"docType":"Plan"}}`
+
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resultsIterator.Close()
+
+	var plansArray []*Plans
+	
+	for resultsIterator.HasNext() {
+		queryResult, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		var plans Plans
+		err = json.Unmarshal(queryResult.Value, &plans)
+		if err != nil {
+			return nil, err
+		}
+		plansArray = append(plansArray, &plans)
+	}
+
+	return plansArray, nil
+
+}
+
+//Customer Support / Provider perspective show all info regarding account - plan and policy : Param - accountID
+
 
 // RegisterPolicy : User subscribes to a policy
 func (spc *InsuranceContract) LinkPlanToAccount(ctx contractapi.TransactionContextInterface, accountID string, planID string) (string, error) {
@@ -367,3 +452,15 @@ func (spc *InsuranceContract) LinkPlanToAccount(ctx contractapi.TransactionConte
 }
 
 // Get All available plans for User: Should return account is and Array of Plans (full details) - User will choose plan and pass accountId and PlanID to Function LInkPlanToAccount
+
+
+// Helper function
+func (spc *InsuranceContract) IDGenerator ( doctype string,  name string, count int) (string, error){
+
+	docSubstring := doctype[0:3]
+	nameSubString := name[0:3]
+
+	s := []string {docSubstring, nameSubString, strconv.Itoa(count)}
+
+	return strings.Join(s,""), nil
+}
