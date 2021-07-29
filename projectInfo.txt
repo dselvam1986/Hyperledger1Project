@@ -94,7 +94,7 @@ peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.exa
 
 REGISTER POLICY 
 Medical
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Medical","40", "true", "500"]}'
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Medical","40", "true", "500","0","true"]}'
 
 Vison
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Vision","10", "true", "100"]}'
