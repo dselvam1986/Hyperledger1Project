@@ -351,6 +351,45 @@ func (spc *InsuranceContract) DeleteAccount(ctx contractapi.TransactionContextIn
 	return ctx.GetStub().DelState(id)
 }
 
+//Get PLan info  - param PlanID
+func (spc *InsuranceContract) GetPlan(ctx contractapi.TransactionContextInterface, planId string) (*Plans, error) {
+	planbytes, err := ctx.GetStub().GetState(planId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if planbytes == nil {
+		return nil, fmt.Errorf("Plan not found")
+	}
+
+	var plan Plans
+	err = json.Unmarshal(planbytes, &plan)
+	if err != nil {
+		return nil, err
+	}
+
+	return &plan, err
+}
+
+// Get Policy Info - param PolicyID
+func (spc *InsuranceContract) GetPolicy(ctx contractapi.TransactionContextInterface, policyId string) (*Policy, error) {
+	policybytes, err := ctx.GetStub().GetState(policyId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if policybytes == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	var policy Policy
+	err = json.Unmarshal(policybytes, &policy)
+	if err != nil {
+		return nil, err
+	}
+
+	return &policy, err
+}
+
+
 //Link Functionality
 // PolicyPlan : Link a policy to an exisiting plan
 func (spc *InsuranceContract) LinkPolicyToPlan(ctx contractapi.TransactionContextInterface, policyID string, planID string) (string, error) {
@@ -426,9 +465,42 @@ func (spc *InsuranceContract) ShowAvailablePlans(ctx contractapi.TransactionCont
 
 	return plansArray, nil
 
-}
+} 
 
 //Customer Support / Provider perspective show all info regarding account - plan and policy : Param - accountID
+func (spc *InsuranceContract) ShowAccountDetails(ctx contractapi.TransactionContextInterface, accountID string) ([]interface{}, error) {
+
+	var result []interface{}
+
+	
+	var acct *Account
+	log.Println("calling fetch ID")
+	acct, _ = contract.FetchID(ctx, accountID)
+
+	// using GETPLAN to retrieve Plan Info
+	var plan *Plans
+	log.Println("calling GET Plan")
+	plan, _ = contract.GetPlan(ctx, acct.PlanId)
+
+
+	// add account and plan to Result array
+	result = append(result, acct)
+	result = append(result, plan)
+
+
+	var policy *Policy
+	log.Println("for loop for get policy with ID ")
+	for _, policyid := range plan.PlanOptions { 
+		policy, _ = contract.GetPolicy(ctx, policyid)
+
+		log.Println("append policy")
+		result = append(result, policy)
+
+	}
+
+	return result, nil
+
+}
 
 // RegisterPolicy : User subscribes to a policy
 func (spc *InsuranceContract) LinkPlanToAccount(ctx contractapi.TransactionContextInterface, accountID string, planID string) (string, error) {
