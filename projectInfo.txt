@@ -85,9 +85,6 @@ peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.exa
 REGISTER PLAN Bronze - family plan
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPlan","Args":["Bronze","true"]}'
 
-REGISTER PLAN Silver - not family plan
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPlan","Args":["Silver","false"]}'
-
 REGISTER PLAN Gold - family plan
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPlan","Args":["Gold","true"]}'
 
@@ -96,36 +93,79 @@ Medical
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Medical","40", "true", "500","0","true"]}'
 
 Vison
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Vision","10", "true", "100", "0", "false"]}'
-
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Vision","5", "false", "50", "1500", "true"]}'
 
 Dental
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Dental","10", "true", "100", "0", "false"]}'
-
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Dental","5", "false", "50", "2000", "true"]}'
+
 
 LINK POLICY TO PLAN
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polMed0","plaBro0"]}'
 
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polDen3","plaBro0"]}'
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polDen1","plaGol1"]}'
 
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polVis1","plaBro0"]}'
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polVis2","plaGol1"]}'
+
+
+
+source ./scripts/setOrgPeerContext.sh 2
+
+REGISTER ACCOUNT + NEW USER
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterAccount","Args":["Jack"]}'
+
+REGISTER USER AND LINK TO ACCOUNT 1
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterUser","Args":["Rachel","Spouse", "false", "accJac2"]}'
+
+
+REGISTER PLAN - not family plan
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPlan","Args":["Cyan","false"]}'
+
+REGISTER PLAN - not family plan
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPlan","Args":["Maroon","false"]}'
+
+
+REGISTER POLICY 
+Medical
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Medical","60", "true", "800","0","true"]}'
+
+Vison
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Vision","10", "true", "100", "0", "false"]}'
+
+Dental
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"RegisterPolicy","Args":["Dental","5", "false", "50", "2000", "true"]}'
+
+LINK POLICY TO PLAN
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polMed3","plaCya2"]}'
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polVis4","plaMar3"]}'
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPolicyToPlan","Args":["polDen5","plaMar3"]}'
+
+ORG 1
+LINK PLAN TO ACCOUNT - USER REGISTER PLAN TO ACCOUNT
+
+source ./scripts/setOrgPeerContext.sh 1
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPlanToAccount","Args":["accJoh0", "plaGol1"]}'
+
+source ./scripts/setOrgPeerContext.sh 2
+
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPlanToAccount","Args":["accJac2", "plaCya2"]}'
+
 
 
 GET USER--------------------------
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"GetUser","Args":["useJan1"]}'
 
-GET ACCOUNT
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"FetchID","Args":["accJoh0"]}'
+GET ACCOUNTpeer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"FetchID","Args":["accJoh0"]}'
 
 
 GET ALL PLANS
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"ShowAvailablePlans","Args":[]}'
 
-USER REGISTER PLAN TO ACCOUNT
-peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"LinkPlanToAccount","Args":["accJoh0", "plaBro0"]}'
 
 SHOW ACCCOUNT DETAILS
 peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile ${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem -C mychannel -n iac $PEER_CONN_PARAMS -c '{"function":"ShowAccountDetails","Args":["accJoh0"]}'
+
 
